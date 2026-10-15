@@ -1,5 +1,6 @@
 import { DIFFICULTY } from '../data/difficulty';
 import { INGREDIENTS } from '../data/ingredients';
+import { pickRecipe } from '../logic/recipe-generator';
 import { rollStock } from '../logic/stock';
 import type { Difficulty, IGameState, IIngredient } from '../types';
 
@@ -36,7 +37,7 @@ export function startGame(): void {
     score: 0,
     timeLeft: c.startTime,
     lives: c.lives,
-    activeRecipe: null,
+    activeRecipe: pickRecipe(state.difficulty),
     cauldronIngredients: [],
     shelfStock: rollStock(INGREDIENTS.slice(0, c.shelfSize)),
     difficulty: state.difficulty,

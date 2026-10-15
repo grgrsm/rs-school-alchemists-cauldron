@@ -234,3 +234,98 @@ p {
   font-size: $size-icon;
   line-height: 1;
 }
+
+/* ---------- bars ---------- */
+.bars {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: $space-3;
+
+  @media (max-width: $bp-sm) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.bar {
+  padding: $space-2 $space-3;
+  background: $color-paper;
+  border: $border-thin solid $color-ink;
+  border-radius: $radius-md;
+  transition: box-shadow $duration-base;
+
+  &--temperature {
+    --bar-color: #{$color-temperature};
+  }
+
+  &--density {
+    --bar-color: #{$color-density};
+  }
+
+  &--magicPower {
+    --bar-color: #{$color-magic};
+  }
+
+  &__title {
+    color: var(--bar-color);
+    font-family: $font-display;
+    font-size: $fs-sm;
+  }
+
+  &__track {
+    position: relative;
+    height: $size-bar;
+    margin: $space-1 0;
+    background: $color-parchment-dark;
+    border: $border-thin solid $color-ink;
+  }
+
+  &__zone {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: $color-zone;
+
+    &--tol {
+      background: $color-zone-tol;
+    }
+  }
+
+  &__zero {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: $half;
+    border-left: $border-thin solid $color-ink;
+  }
+
+  &__fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: var(--bar-color);
+    opacity: $opacity-fill;
+    transition:
+      left $duration-base ease,
+      width $duration-base ease;
+  }
+
+  &__marker {
+    position: absolute;
+    top: -$space-1;
+    bottom: -$space-1;
+    width: $size-bar-marker-width;
+    background: $color-ink;
+    border-radius: $radius-sm;
+    transform: translateX(-$half);
+    transition: left $duration-base ease;
+  }
+
+  &__value {
+    font-family: $font-display;
+    font-size: $fs-sm;
+  }
+
+  &--ok {
+    box-shadow: 0 0 $glow $color-green-glow;
+  }
+}

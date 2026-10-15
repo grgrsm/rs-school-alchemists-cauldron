@@ -13,3 +13,4 @@ export const STAT_SHORT: Record<Stat, string> = {
   density: 'Dens',
   magicPower: 'Magic',
 };
+export const BAR_DOMAIN: Record<Stat, number> = { temperature: 100, density: 60, magicPower: 100 };
