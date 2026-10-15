@@ -14,7 +14,9 @@ import { calculateCauldron } from '../logic/calculate-cauldron';
 import {
   addIngredient,
   brew,
+  continueGame,
   exitToMenu,
+  flush,
   getState,
   pause,
   resume,
@@ -25,6 +27,7 @@ import {
   tick,
 } from '../state/game-state';
 import { addEntry, clearBoard, loadBoard, qualifies } from '../storage/leaderboard';
+import { hasSave } from '../storage/save';
 import type { Difficulty, IGameState, IValues, Stat } from '../types';
 
 interface IFill {
@@ -256,6 +259,7 @@ function overlayHtml(s: IGameState): string {
       [
         '<div class="modal__stack">',
         btn('start', 'Start Game', 'btn--brew'),
+        hasSave() ? btn('continue', 'Continue Game') : '',
         `<div class="modal__row" role="group" aria-label="Difficulty">${diff}</div>`,
         btn('leaderboard', 'Leaderboard'),
         btn('help', 'Help (Rules)'),
@@ -386,6 +390,11 @@ const actions: Record<string, (el: HTMLElement) => void> = {
     if (getState().status === 'playing') pause();
     else render();
   },
+  continue: () => {
+    overlay = 'none';
+    scoreSaved = false;
+    continueGame();
+  },
 };
 
 /* ---------- events ---------- */
@@ -421,6 +430,7 @@ export function initApp(): void {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) pause();
   });
+  window.addEventListener('pagehide', flush);
   window.setInterval(tick, TICK_MS);
   render();
 }
