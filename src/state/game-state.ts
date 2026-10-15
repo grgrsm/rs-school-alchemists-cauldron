@@ -1,3 +1,4 @@
+import { POUR_OUT_COST } from '../data/constants';
 import { DIFFICULTY } from '../data/difficulty';
 import { INGREDIENTS } from '../data/ingredients';
 import { isBrewSuccessful } from '../logic/brew-check';
@@ -136,6 +137,15 @@ export function brew(): void {
   } else {
     state.lives -= 1;
   }
+  state.cauldronIngredients = [];
+  state.lastReactionId = null;
+  checkEnd();
+  emit();
+}
+
+export function pourOut(): void {
+  if (state.status !== 'playing' || state.cauldronIngredients.length === 0) return;
+  state.timeLeft -= POUR_OUT_COST;
   state.cauldronIngredients = [];
   state.lastReactionId = null;
   checkEnd();
