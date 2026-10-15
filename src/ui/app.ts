@@ -12,6 +12,7 @@ import {
   flush,
   getState,
   pause,
+  pourOut,
   resume,
   setDifficulty,
   startGame,
@@ -196,7 +197,10 @@ function actionsHtml(s: IGameState): string {
   const main =
     s.status === 'menu'
       ? btn('start', 'Start Game', 'btn--brew')
-      : [btn('brew', 'Brew', 'btn--brew', !playing || empty)].join('');
+      : [
+          btn('brew', 'Brew', 'btn--brew', !playing || empty),
+          btn('pour', 'Pour out', '', !playing || empty),
+        ].join('');
   return [
     '<footer class="actions">',
     btn('help', 'Help'),
@@ -389,6 +393,7 @@ const actions: Record<string, (el: HTMLElement) => void> = {
     startGame();
   },
   brew,
+  pour: pourOut,
   pause,
   resume,
   exit: exitToMenu,
