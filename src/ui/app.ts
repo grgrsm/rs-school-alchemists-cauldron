@@ -127,6 +127,7 @@ function shelfHtml(s: IGameState): string {
         '<li class="card"',
         '>',
         `<button class="card__btn" type="button" data-id="${ing.id}"`,
+        ' draggable="true"',
         locked ? ' disabled' : '',
         '>',
         `<span class="badge">${stock}</span>`,
@@ -145,6 +146,7 @@ function cauldronHtml(s: IGameState): string {
     .join('');
   return [
     '<div class="cauldron"',
+    ' data-drop',
     '>',
     `<div class="cauldron__pot"><div class="cauldron__content">${items}</div></div>`,
     '</div>',
@@ -425,6 +427,40 @@ export function initApp(): void {
       nameError = '';
     }
     render();
+  });
+
+  const DRAG_TYPE = 'application/x-alchemist-ingredient';
+  const canDrop = (e: DragEvent): boolean => {
+    const s = getState();
+    return (
+      Boolean(e.dataTransfer?.types.includes(DRAG_TYPE)) &&
+      s.status === 'playing' &&
+      s.cauldronIngredients.length < DIFFICULTY[s.difficulty].maxCauldron
+    );
+  };
+  root.addEventListener('dragstart', (e) => {
+    const card = (e.target as HTMLElement).closest<HTMLElement>('[data-id]');
+    if (!card?.dataset.id || !e.dataTransfer) return;
+    e.dataTransfer.setData(DRAG_TYPE, card.dataset.id);
+    e.dataTransfer.effectAllowed = 'copy';
+  });
+  root.addEventListener('dragover', (e) => {
+    const zone = (e.target as HTMLElement).closest<HTMLElement>('[data-drop]');
+    if (!zone || !canDrop(e)) return;
+    e.preventDefault();
+    zone.classList.add('is-over');
+  });
+  root.addEventListener('dragleave', (e) => {
+    const zone = (e.target as HTMLElement).closest<HTMLElement>('[data-drop]');
+    if (zone && !zone.contains(e.relatedTarget as Node | null)) zone.classList.remove('is-over');
+  });
+  root.addEventListener('drop', (e) => {
+    const zone = (e.target as HTMLElement).closest<HTMLElement>('[data-drop]');
+    if (!zone) return;
+    e.preventDefault();
+    zone.classList.remove('is-over');
+    const id = e.dataTransfer?.getData(DRAG_TYPE);
+    if (id) addIngredient(id);
   });
 
   document.addEventListener('visibilitychange', () => {
