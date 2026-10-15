@@ -1,4 +1,12 @@
-import { BAR_DOMAIN, LOW_TIME, STAT_LABEL, STAT_SHORT, STATS, TICK_MS } from '../data/constants';
+import {
+  BAR_DOMAIN,
+  LOW_TIME,
+  NAME_PATTERN,
+  STAT_LABEL,
+  STAT_SHORT,
+  STATS,
+  TICK_MS,
+} from '../data/constants';
 import { DIFFICULTY } from '../data/difficulty';
 import { INGREDIENTS } from '../data/ingredients';
 import { inRange } from '../logic/brew-check';
@@ -15,7 +23,8 @@ import {
   subscribeTick,
   tick,
 } from '../state/game-state';
-import type { IGameState, IValues, Stat } from '../types';
+import { addEntry, clearBoard, loadBoard, qualifies } from '../storage/leaderboard';
+import type { Difficulty, IGameState, IValues, Stat } from '../types';
 
 interface IFill {
   left: number;
@@ -25,10 +34,15 @@ interface IFill {
 
 const MID = 50;
 const FULL = 100;
+type Overlay = 'none' | 'leaderboard' | 'confirm-clear';
 
 const appRoot = document.querySelector<HTMLDivElement>('#app');
 if (!appRoot) throw new Error('Missing #app element');
 const root: HTMLDivElement = appRoot;
+
+let overlay: Overlay = 'none';
+let nameError = '';
+let scoreSaved = false;
 let prevFill: Record<Stat, IFill> = {
   temperature: { left: MID, width: 0, pos: MID },
   density: { left: MID, width: 0, pos: MID },
@@ -41,6 +55,11 @@ const formatTime = (s: number): string => {
   const t = Math.max(0, Math.ceil(s));
   return `${pad(Math.floor(t / 60))}:${pad(t % 60)}`;
 };
+const formatDate = (ts: number): string => {
+  const d = new Date(ts);
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const signed = (n: number): string => (n > 0 ? `+${n}` : n < 0 ? `\u2212${Math.abs(n)}` : '0');
 const pct = (v: number, k: Stat): number =>
   Math.min(FULL, Math.max(0, ((v + BAR_DOMAIN[k]) / (2 * BAR_DOMAIN[k])) * FULL));
@@ -171,7 +190,8 @@ function barsHtml(s: IGameState, values: IValues): string {
 function actionsHtml(s: IGameState): string {
   const playing = s.status === 'playing';
   const empty = s.cauldronIngredients.length === 0;
-  const side = s.status === 'menu' ? '' : btn('pause', 'Pause', '', !playing);
+  const side =
+    s.status === 'menu' ? btn('leaderboard', 'Leaderboard') : btn('pause', 'Pause', '', !playing);
   const main =
     s.status === 'menu'
       ? btn('start', 'Start Game', 'btn--brew')
@@ -188,7 +208,44 @@ function actionsHtml(s: IGameState): string {
 const modal = (title: string, body: string): string =>
   `<div class="overlay"><div class="modal" role="dialog" aria-modal="true" aria-label="${title}"><h2 class="modal__title">${title}</h2>${body}</div></div>`;
 
+function boardHtml(d: Difficulty): string {
+  const rows = loadBoard(d);
+  if (rows.length === 0) return '<p>No records yet.</p>';
+  const body = rows
+    .map((e, i) =>
+      [
+        `<tr><td>${i + 1}</td><td>${esc(e.name)}</td><td>${e.score}</td>`,
+        `<td>${formatDate(e.timestamp)}</td></tr>`,
+      ].join(''),
+    )
+    .join('');
+  return [
+    '<div class="board-wrap"><table class="board"><thead><tr><th>#</th><th>Name</th><th>Score</th>',
+    `<th>Date</th></tr></thead><tbody>${body}</tbody></table></div>`,
+  ].join('');
+}
+
+function entryHtml(s: IGameState): string {
+  if (scoreSaved || !qualifies(s.score, s.difficulty)) return '';
+  return [
+    '<form class="entry"><label>Your name <input name="name" maxlength="15" autocomplete="off" required /></label>',
+    `<button class="btn btn--small" type="submit">Save</button><p class="entry__error">${nameError}</p></form>`,
+  ].join('');
+}
+
 function overlayHtml(s: IGameState): string {
+  if (overlay === 'leaderboard') {
+    return modal(
+      'Leaderboard',
+      `${boardHtml(s.difficulty)}<div class="modal__row">${btn('confirm-clear', 'Clear Leaderboard')}${btn('close', 'Close')}</div>`,
+    );
+  }
+  if (overlay === 'confirm-clear') {
+    return modal(
+      'Clear leaderboard?',
+      `<div class="modal__row">${btn('clear', 'Yes, clear')}${btn('leaderboard', 'Cancel')}</div>`,
+    );
+  }
   if (s.status === 'paused') {
     return modal(
       'Paused',
@@ -200,6 +257,8 @@ function overlayHtml(s: IGameState): string {
       'Game Over',
       [
         `<p class="modal__score">Final score: <b>${s.score}</b></p><p>${s.gameOverReason}</p>`,
+        entryHtml(s),
+        boardHtml(s.difficulty),
         '<div class="modal__row">',
         btn('start', 'Play Again', 'btn--brew'),
         btn('exit', 'Menu'),
@@ -258,14 +317,36 @@ function updateHud(): void {
   box.classList.toggle('hud__time--low', s.timeLeft < LOW_TIME);
 }
 
+/* ---------- actions ---------- */
+const ui = (fn: () => void) => (): void => {
+  fn();
+  render();
+};
+
 const actions: Record<string, (el: HTMLElement) => void> = {
   start: () => {
+    overlay = 'none';
+    scoreSaved = false;
+    nameError = '';
     startGame();
   },
   brew,
   pause,
   resume,
   exit: exitToMenu,
+  leaderboard: ui(() => {
+    overlay = 'leaderboard';
+  }),
+  'confirm-clear': ui(() => {
+    overlay = 'confirm-clear';
+  }),
+  clear: ui(() => {
+    clearBoard(getState().difficulty);
+    overlay = 'leaderboard';
+  }),
+  close: ui(() => {
+    overlay = 'none';
+  }),
 };
 
 /* ---------- events ---------- */
@@ -282,6 +363,20 @@ export function initApp(): void {
     }
     const card = target.closest<HTMLElement>('[data-id]');
     if (card?.dataset.id) addIngredient(card.dataset.id);
+  });
+
+  root.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = String(new FormData(e.target as HTMLFormElement).get('name') ?? '').trim();
+    if (!NAME_PATTERN.test(name)) {
+      nameError = '2\u201315 characters: letters, digits, space, _ or -';
+    } else {
+      const s = getState();
+      addEntry({ name, score: s.score, difficulty: s.difficulty, timestamp: Date.now() });
+      scoreSaved = true;
+      nameError = '';
+    }
+    render();
   });
 
   document.addEventListener('visibilitychange', () => {
