@@ -43,5 +43,16 @@ export interface IGameState {
   cauldronIngredients: IIngredient[];
   shelfStock: Record<string, number>;
   difficulty: Difficulty;
+  lastReactionId: string | null;
   gameOverReason: string;
+}
+
+export interface IReaction {
+  id: string;
+  name: string;
+  difficulty: Exclude<Difficulty, 'easy'>;
+  timePenalty?: number;
+  loseLife?: boolean;
+  isActive: (ingredients: IIngredient[]) => boolean;
+  apply: (values: IValues) => IValues;
 }
