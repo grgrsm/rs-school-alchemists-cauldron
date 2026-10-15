@@ -4,6 +4,7 @@ import { isBrewSuccessful } from '../logic/brew-check';
 import { calculateCauldron } from '../logic/calculate-cauldron';
 import { pickRecipe } from '../logic/recipe-generator';
 import { isShelfEmpty, rollStock } from '../logic/stock';
+import { clearSave, loadGame, saveGame } from '../storage/save';
 import type { Difficulty, IGameState, IIngredient } from '../types';
 
 const createMenuState = (difficulty: Difficulty): IGameState => ({
@@ -33,7 +34,13 @@ export const subscribeTick = (fn: () => void): void => {
 
 const config = () => DIFFICULTY[state.difficulty];
 
+function persist(): void {
+  if (state.status === 'playing' || state.status === 'paused') saveGame(state);
+  else if (state.status === 'game-over') clearSave();
+}
+
 function emit(): void {
+  persist();
   listeners.forEach((fn) => fn());
 }
 
@@ -67,6 +74,7 @@ export function setDifficulty(difficulty: Difficulty): void {
 
 export function startGame(): void {
   const c = config();
+  clearSave();
   state = {
     status: 'playing',
     score: 0,
@@ -79,6 +87,13 @@ export function startGame(): void {
     gameOverReason: '',
   };
   lastTick = Date.now();
+  emit();
+}
+
+export function continueGame(): void {
+  const saved = loadGame();
+  if (!saved) return;
+  state = saved;
   emit();
 }
 
@@ -127,6 +142,7 @@ export function resume(): void {
 }
 
 export function exitToMenu(): void {
+  clearSave();
   state = createMenuState(state.difficulty);
   emit();
 }
@@ -137,4 +153,10 @@ export function tick(): void {
   checkEnd();
   if (isOver()) emit();
   else tickListeners.forEach((fn) => fn());
+}
+
+export function flush(): void {
+  if (state.status !== 'playing') return;
+  sync();
+  saveGame(state);
 }
