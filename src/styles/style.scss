@@ -217,12 +217,6 @@ p {
     text-align: center;
   }
 
-  &__stats {
-    display: grid;
-    font-size: $fs-xs;
-    text-align: center;
-  }
-
   &--empty {
     border: $border-thin dashed $color-ink-soft;
     border-radius: $radius-md;
@@ -596,6 +590,40 @@ p {
     padding: $space-1 $space-2;
     text-align: left;
     border-bottom: $border-thin solid $color-parchment-dark;
+  }
+}
+
+.tooltip {
+  --tx: #{$tooltip-gap};
+  --ty: 0;
+
+  position: fixed;
+  z-index: $z-tooltip;
+  min-width: $size-tooltip;
+  padding: $space-2 $space-3;
+  color: $color-paper;
+  pointer-events: none;
+  background: $color-pot;
+  border: $border-thin solid $color-gold;
+  border-radius: $radius-sm;
+  transform: translate(var(--tx), var(--ty));
+
+  &[hidden] {
+    display: none;
+  }
+
+  &--left {
+    --tx: calc(-#{$full} - #{$tooltip-gap});
+  }
+
+  &--up {
+    --ty: -#{$full};
+  }
+
+  &__row {
+    display: flex;
+    justify-content: space-between;
+    gap: $space-3;
   }
 }
 
