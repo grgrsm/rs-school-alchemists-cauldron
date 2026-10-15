@@ -59,6 +59,12 @@ function checkEnd(): void {
   state.gameOverReason = reason;
 }
 
+export function setDifficulty(difficulty: Difficulty): void {
+  if (state.status !== 'menu') return;
+  state = { ...state, difficulty };
+  emit();
+}
+
 export function startGame(): void {
   const c = config();
   state = {
