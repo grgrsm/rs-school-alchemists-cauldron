@@ -15,3 +15,4 @@ export const TOP_N = 10;
 export const BOARD_KEY = 'alchemist-leaderboard';
 export const NAME_PATTERN = /^[\p{L}\d _-]{2,15}$/u;
 export const SAVE_KEY = 'alchemist-save';
+export const POUR_OUT_COST = 10;
