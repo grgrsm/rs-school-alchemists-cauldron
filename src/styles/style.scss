@@ -286,6 +286,12 @@ p {
     justify-content: center;
     gap: $space-2;
   }
+
+  &__reaction {
+    min-height: $space-5;
+    color: $color-magic;
+    font-family: $font-display;
+  }
 }
 
 .float {
