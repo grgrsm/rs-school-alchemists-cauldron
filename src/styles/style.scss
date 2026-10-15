@@ -70,6 +70,44 @@ p {
       grid-row: 2;
     }
   }
+
+  &__time {
+    min-width: 8rem;
+  }
+
+  &__bar {
+    height: $space-2;
+    margin-top: $space-1;
+    border: $border-thin solid $color-ink;
+    background: $color-parchment-dark;
+
+    i {
+      display: block;
+      height: $full;
+      background: $color-green;
+      transition: width $duration-fast linear;
+    }
+  }
+
+  &__time--low {
+    color: $color-danger;
+    animation: pulse $duration-pulse ease-in-out infinite;
+
+    .hud__bar i {
+      background: $color-danger;
+    }
+  }
+
+  &__lives {
+    display: flex;
+    grid-column: 3;
+    justify-content: flex-end;
+    gap: $space-1;
+
+    @media (max-width: $bp-md) {
+      grid-row: 2;
+    }
+  }
 }
 
 .title {
@@ -81,6 +119,17 @@ p {
   @media (max-width: $bp-md) {
     grid-column: 1 / -1;
     grid-row: 1;
+  }
+}
+
+.heart {
+  color: $color-danger;
+  font-size: $size-heart;
+  line-height: 1;
+
+  &--lost {
+    opacity: $opacity-dim;
+    filter: grayscale($full);
   }
 }
 
@@ -444,5 +493,74 @@ p {
     padding-left: $space-6;
     font-size: $fs-lg;
     background: linear-gradient($color-green, $color-green-dark);
+  }
+}
+
+/* ---------- overlays ---------- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: $z-overlay;
+  display: grid;
+  place-items: center;
+  padding: $space-3;
+  background: $color-backdrop;
+}
+
+.modal {
+  width: min($size-modal, $full);
+  max-height: $full;
+  padding: $space-5;
+  overflow-y: auto;
+  background: $color-parchment;
+  border: $border-thick double $color-ink;
+  border-radius: $radius-md;
+  user-select: text;
+
+  &__title {
+    margin-bottom: $space-4;
+    font-family: $font-display;
+    font-size: $fs-xl;
+    text-align: center;
+  }
+
+  &__stack {
+    display: grid;
+    gap: $space-3;
+  }
+
+  &__row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: $space-3;
+    margin-top: $space-3;
+  }
+
+  &__list {
+    margin: 0 0 $space-4;
+    padding-left: $space-5;
+  }
+
+  &__score {
+    font-family: $font-display;
+    font-size: $fs-lg;
+    text-align: center;
+  }
+}
+
+@keyframes pulse {
+  50% {
+    opacity: $opacity-dim;
+    transform: scale($scale-pulse);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: $duration-reduced !important;
+    animation-duration: $duration-reduced !important;
   }
 }
