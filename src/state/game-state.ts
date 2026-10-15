@@ -105,6 +105,26 @@ export function brew(): void {
   emit();
 }
 
+export function pause(): void {
+  if (state.status !== 'playing') return;
+  sync();
+  checkEnd();
+  if (state.status === 'playing') state.status = 'paused';
+  emit();
+}
+
+export function resume(): void {
+  if (state.status !== 'paused') return;
+  lastTick = Date.now();
+  state.status = 'playing';
+  emit();
+}
+
+export function exitToMenu(): void {
+  state = createMenuState(state.difficulty);
+  emit();
+}
+
 export function tick(): void {
   if (state.status !== 'playing') return;
   sync();
