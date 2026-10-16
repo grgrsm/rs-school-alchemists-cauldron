@@ -7,6 +7,7 @@ import { calculateCauldron } from '../logic/calculate-cauldron';
 import {
   addIngredient,
   brew,
+  consumeFeedback,
   continueGame,
   exitToMenu,
   flush,
@@ -365,6 +366,8 @@ function render(): void {
     el.style.left = `${fills[el.dataset.marker as Stat].pos}%`;
   });
   prevFill = fills;
+  const fx = consumeFeedback();
+  if (fx) root.querySelector('.field')?.classList.add(`fx--${fx}`);
   root.querySelector<HTMLElement>('[data-action="resume"]')?.focus();
 }
 
