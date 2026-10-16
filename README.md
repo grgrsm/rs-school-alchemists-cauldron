@@ -30,6 +30,7 @@ Husky runs lint-staged before each commit and lint, format check and build befor
 - Hover tooltip with the three ingredient values and smart positioning near screen edges.
 - Chemical reactions: all 15 are typed in `src/data/reactions.ts`; Medium enables the first 2 `medium` reactions, Hard the first 3 `hard` reactions.
 - Pour Out clears the cauldron for 10 seconds without losing a life.
+- CSS-only animations: success glow, explosion and screen shake, floating ingredient icons.
 
 ## Structure
 

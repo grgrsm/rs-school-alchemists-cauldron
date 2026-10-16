@@ -9,6 +9,8 @@ import { isShelfEmpty, rollStock } from '../logic/stock';
 import { clearSave, loadGame, saveGame } from '../storage/save';
 import type { Difficulty, IGameState, IIngredient } from '../types';
 
+export type Feedback = 'success' | 'fail' | 'reaction';
+
 const createMenuState = (difficulty: Difficulty): IGameState => ({
   status: 'menu',
   score: 0,
@@ -24,6 +26,7 @@ const createMenuState = (difficulty: Difficulty): IGameState => ({
 
 let state: IGameState = createMenuState('medium');
 let lastTick = Date.now();
+let feedback: Feedback | null = null;
 const listeners: Array<() => void> = [];
 const tickListeners: Array<() => void> = [];
 
@@ -33,6 +36,11 @@ export const subscribe = (fn: () => void): void => {
 };
 export const subscribeTick = (fn: () => void): void => {
   tickListeners.push(fn);
+};
+export const consumeFeedback = (): Feedback | null => {
+  const current = feedback;
+  feedback = null;
+  return current;
 };
 
 const config = () => DIFFICULTY[state.difficulty];
@@ -114,6 +122,7 @@ export function addIngredient(id: string): void {
   for (const reaction of reactionsFor(state.difficulty)) {
     if (!reaction.isActive(before) && reaction.isActive(after)) {
       state.lastReactionId = reaction.id;
+      feedback = 'reaction';
       state.timeLeft -= reaction.timePenalty ?? 0;
       if (reaction.loseLife) {
         state.lives -= 1;
@@ -134,8 +143,10 @@ export function brew(): void {
     state.score += c.scorePerBrew;
     state.timeLeft = Math.min(c.startTime, state.timeLeft + c.timeBonus);
     state.activeRecipe = pickRecipe(state.difficulty);
+    feedback = 'success';
   } else {
     state.lives -= 1;
+    feedback = 'fail';
   }
   state.cauldronIngredients = [];
   state.lastReactionId = null;
