@@ -217,6 +217,14 @@ p {
     text-align: center;
   }
 
+  &__key {
+    position: absolute;
+    right: $space-1;
+    bottom: $space-1;
+    font-size: $fs-xs;
+    opacity: $opacity-dim;
+  }
+
   &--empty {
     border: $border-thin dashed $color-ink-soft;
     border-radius: $radius-md;
