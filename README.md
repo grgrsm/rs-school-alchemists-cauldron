@@ -31,6 +31,7 @@ Husky runs lint-staged before each commit and lint, format check and build befor
 - Chemical reactions: all 15 are typed in `src/data/reactions.ts`; Medium enables the first 2 `medium` reactions, Hard the first 3 `hard` reactions.
 - Pour Out clears the cauldron for 10 seconds without losing a life.
 - CSS-only animations: success glow, explosion and screen shake, floating ingredient icons.
+- Keyboard shortcuts while playing: `1`-`8` add an ingredient, `B` brew, `O` pour out, `P` or `Esc` pause.
 
 ## Structure
 
