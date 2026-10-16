@@ -115,7 +115,7 @@ function shelfHtml(s: IGameState): string {
   const locked =
     s.status !== 'playing' || s.cauldronIngredients.length >= DIFFICULTY[s.difficulty].maxCauldron;
   return shelfList(s)
-    .map((ing) => {
+    .map((ing, idx) => {
       const stock = s.shelfStock[ing.id] ?? 0;
       if (stock <= 0) return '<li class="card card--empty"><span class="badge">0</span></li>';
       return [
@@ -129,6 +129,7 @@ function shelfHtml(s: IGameState): string {
         `<span class="badge">${stock}</span>`,
         `<span class="card__icon" aria-hidden="true">${ing.icon}</span>`,
         `<span class="card__name">${ing.name}</span>`,
+        `<kbd class="card__key">${idx + 1}</kbd>`,
         '</button></li>',
       ].join('');
     })
@@ -499,6 +500,21 @@ export function initApp(): void {
     else hideTip();
   });
   root.addEventListener('mouseleave', hideTip);
+
+  document.addEventListener('keydown', (e) => {
+    const target = e.target as HTMLElement;
+    if (target.matches('input, textarea, select') || e.ctrlKey || e.metaKey || e.altKey) return;
+    const s = getState();
+    if (s.status !== 'playing') return;
+    const key = e.key.toLowerCase();
+    if (key === 'p' || key === 'escape') pause();
+    else if (key === 'b') brew();
+    else if (key === 'o') pourOut();
+    else if (/^[1-8]$/.test(key)) {
+      const ing = shelfList(s)[Number(key) - 1];
+      if (ing) addIngredient(ing.id);
+    }
+  });
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) pause();
