@@ -6,7 +6,10 @@ import { calculateCauldron } from '../logic/calculate-cauldron';
 import {
   addIngredient,
   brew,
+  exitToMenu,
   getState,
+  pause,
+  resume,
   startGame,
   subscribe,
   subscribeTick,
@@ -168,7 +171,7 @@ function barsHtml(s: IGameState, values: IValues): string {
 function actionsHtml(s: IGameState): string {
   const playing = s.status === 'playing';
   const empty = s.cauldronIngredients.length === 0;
-  const side = '';
+  const side = s.status === 'menu' ? '' : btn('pause', 'Pause', '', !playing);
   const main =
     s.status === 'menu'
       ? btn('start', 'Start Game', 'btn--brew')
@@ -186,6 +189,12 @@ const modal = (title: string, body: string): string =>
   `<div class="overlay"><div class="modal" role="dialog" aria-modal="true" aria-label="${title}"><h2 class="modal__title">${title}</h2>${body}</div></div>`;
 
 function overlayHtml(s: IGameState): string {
+  if (s.status === 'paused') {
+    return modal(
+      'Paused',
+      `<div class="modal__stack">${btn('resume', 'Resume', 'btn--brew')}${btn('exit', 'Exit to Menu')}</div>`,
+    );
+  }
   if (s.status === 'game-over') {
     return modal(
       'Game Over',
@@ -193,6 +202,7 @@ function overlayHtml(s: IGameState): string {
         `<p class="modal__score">Final score: <b>${s.score}</b></p><p>${s.gameOverReason}</p>`,
         '<div class="modal__row">',
         btn('start', 'Play Again', 'btn--brew'),
+        btn('exit', 'Menu'),
         '</div>',
       ].join(''),
     );
@@ -210,6 +220,7 @@ function render(): void {
   >;
   root.innerHTML = [
     '<div class="game',
+    s.status === 'paused' ? ' game--paused' : '',
     '">',
     headerHtml(s),
     '<main class="field"><ul class="shelf">',
@@ -233,6 +244,7 @@ function render(): void {
     el.style.left = `${fills[el.dataset.marker as Stat].pos}%`;
   });
   prevFill = fills;
+  root.querySelector<HTMLElement>('[data-action="resume"]')?.focus();
 }
 
 function updateHud(): void {
@@ -251,6 +263,9 @@ const actions: Record<string, (el: HTMLElement) => void> = {
     startGame();
   },
   brew,
+  pause,
+  resume,
+  exit: exitToMenu,
 };
 
 /* ---------- events ---------- */
@@ -267,6 +282,10 @@ export function initApp(): void {
     }
     const card = target.closest<HTMLElement>('[data-id]');
     if (card?.dataset.id) addIngredient(card.dataset.id);
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) pause();
   });
   window.setInterval(tick, TICK_MS);
   render();

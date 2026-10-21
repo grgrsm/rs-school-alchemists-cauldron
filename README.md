@@ -22,6 +22,7 @@ Husky runs lint-staged before each commit and lint, format check and build befor
 - Three parameter bars (Temperature, Density, Magic Power) centred on 0, with recipe target zones, a current-value marker and a glow when the value is inside the checked range.
 - Recipe pool of 20 recipes, ingredient counter, Brew check with tolerance, score and time bonus.
 - Timer (calculated from timestamps), lives and a Game Over screen.
+- Pause dialog (Resume / Exit to Menu), automatic pause when the tab is hidden.
 
 ## Structure
 
