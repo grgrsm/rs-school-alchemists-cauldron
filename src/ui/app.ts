@@ -1,12 +1,4 @@
-import {
-  BAR_DOMAIN,
-  LOW_TIME,
-  NAME_PATTERN,
-  STAT_LABEL,
-  STAT_SHORT,
-  STATS,
-  TICK_MS,
-} from '../data/constants';
+import { BAR_DOMAIN, LOW_TIME, NAME_PATTERN, STAT_LABEL, STATS, TICK_MS } from '../data/constants';
 import { DIFFICULTIES, DIFFICULTY } from '../data/difficulty';
 import { INGREDIENTS } from '../data/ingredients';
 import { inRange } from '../logic/brew-check';
@@ -125,6 +117,7 @@ function shelfHtml(s: IGameState): string {
       if (stock <= 0) return '<li class="card card--empty"><span class="badge">0</span></li>';
       return [
         '<li class="card"',
+        ` data-tip="${ing.id}"`,
         '>',
         `<button class="card__btn" type="button" data-id="${ing.id}"`,
         ' draggable="true"',
@@ -133,7 +126,6 @@ function shelfHtml(s: IGameState): string {
         `<span class="badge">${stock}</span>`,
         `<span class="card__icon" aria-hidden="true">${ing.icon}</span>`,
         `<span class="card__name">${ing.name}</span>`,
-        `<span class="card__stats">${STATS.map((k) => `<span>${STAT_SHORT[k]} ${signed(ing[k])}</span>`).join('')}</span>`,
         '</button></li>',
       ].join('');
     })
@@ -305,9 +297,36 @@ function overlayHtml(s: IGameState): string {
   return '';
 }
 
+/* ---------- tooltip ---------- */
+const tip = document.createElement('div');
+tip.className = 'tooltip';
+tip.hidden = true;
+document.body.append(tip);
+const hideTip = (): void => {
+  tip.hidden = true;
+};
+
+function showTip(card: HTMLElement): void {
+  const ing = INGREDIENTS.find((i) => i.id === card.dataset.tip);
+  if (!ing) return;
+  const rows = STATS.map(
+    (k) => `<p class="tooltip__row"><span>${STAT_LABEL[k]}</span><b>${signed(ing[k])}</b></p>`,
+  ).join('');
+  tip.innerHTML = `<strong>${ing.name}</strong>${rows}`;
+  tip.hidden = false;
+  const r = card.getBoundingClientRect();
+  const left = r.right + tip.offsetWidth > window.innerWidth;
+  const up = r.top + tip.offsetHeight > window.innerHeight;
+  tip.classList.toggle('tooltip--left', left);
+  tip.classList.toggle('tooltip--up', up);
+  tip.style.left = `${left ? r.left : r.right}px`;
+  tip.style.top = `${up ? r.bottom : r.top}px`;
+}
+
 /* ---------- render ---------- */
 function render(): void {
   const s = getState();
+  hideTip();
   const values = calculateCauldron(s.cauldronIngredients);
   const fills = Object.fromEntries(STATS.map((k) => [k, fillOf(values[k], k)])) as Record<
     Stat,
@@ -462,6 +481,13 @@ export function initApp(): void {
     const id = e.dataTransfer?.getData(DRAG_TYPE);
     if (id) addIngredient(id);
   });
+
+  root.addEventListener('mouseover', (e) => {
+    const card = (e.target as HTMLElement).closest<HTMLElement>('[data-tip]');
+    if (card && getState().status === 'playing') showTip(card);
+    else hideTip();
+  });
+  root.addEventListener('mouseleave', hideTip);
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) pause();
