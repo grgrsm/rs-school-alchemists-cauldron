@@ -19,6 +19,7 @@ Husky runs lint-staged before each commit and lint, format check and build befor
 ## Features
 
 - Shelf of ingredient cards with random stock (2-15) and a cauldron with a capacity limit.
+- Three parameter bars (Temperature, Density, Magic Power) centred on 0, with recipe target zones, a current-value marker and a glow when the value is inside the checked range.
 
 ## Structure
 
