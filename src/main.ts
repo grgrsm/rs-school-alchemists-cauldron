@@ -1,1 +1,4 @@
-document.title = 'Alchemist’s Cauldron';
+import './styles/style.scss';
+import { initApp } from './ui/app';
+
+initApp();
