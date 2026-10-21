@@ -92,6 +92,7 @@ export function loadGame(): IGameState | null {
       cauldronIngredients: cauldron,
       shelfStock: stock,
       difficulty: level,
+      lastReactionId: null,
       gameOverReason: '',
     };
   } catch {

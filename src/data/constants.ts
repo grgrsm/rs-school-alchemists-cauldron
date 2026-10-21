@@ -8,11 +8,6 @@ export const STAT_LABEL: Record<Stat, string> = {
   density: 'Density',
   magicPower: 'Magic Power',
 };
-export const STAT_SHORT: Record<Stat, string> = {
-  temperature: 'Temp',
-  density: 'Dens',
-  magicPower: 'Magic',
-};
 export const BAR_DOMAIN: Record<Stat, number> = { temperature: 100, density: 60, magicPower: 100 };
 export const LOW_TIME = 15;
 export const TICK_MS = 200;
@@ -20,3 +15,4 @@ export const TOP_N = 10;
 export const BOARD_KEY = 'alchemist-leaderboard';
 export const NAME_PATTERN = /^[\p{L}\d _-]{2,15}$/u;
 export const SAVE_KEY = 'alchemist-save';
+export const POUR_OUT_COST = 10;

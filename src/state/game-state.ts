@@ -1,11 +1,15 @@
+import { POUR_OUT_COST } from '../data/constants';
 import { DIFFICULTY } from '../data/difficulty';
 import { INGREDIENTS } from '../data/ingredients';
 import { isBrewSuccessful } from '../logic/brew-check';
 import { calculateCauldron } from '../logic/calculate-cauldron';
 import { pickRecipe } from '../logic/recipe-generator';
+import { reactionsFor } from '../logic/reactions-logic';
 import { isShelfEmpty, rollStock } from '../logic/stock';
 import { clearSave, loadGame, saveGame } from '../storage/save';
 import type { Difficulty, IGameState, IIngredient } from '../types';
+
+export type Feedback = 'success' | 'fail' | 'reaction';
 
 const createMenuState = (difficulty: Difficulty): IGameState => ({
   status: 'menu',
@@ -16,11 +20,13 @@ const createMenuState = (difficulty: Difficulty): IGameState => ({
   cauldronIngredients: [],
   shelfStock: {},
   difficulty,
+  lastReactionId: null,
   gameOverReason: '',
 });
 
 let state: IGameState = createMenuState('medium');
 let lastTick = Date.now();
+let feedback: Feedback | null = null;
 const listeners: Array<() => void> = [];
 const tickListeners: Array<() => void> = [];
 
@@ -30,6 +36,11 @@ export const subscribe = (fn: () => void): void => {
 };
 export const subscribeTick = (fn: () => void): void => {
   tickListeners.push(fn);
+};
+export const consumeFeedback = (): Feedback | null => {
+  const current = feedback;
+  feedback = null;
+  return current;
 };
 
 const config = () => DIFFICULTY[state.difficulty];
@@ -84,6 +95,7 @@ export function startGame(): void {
     cauldronIngredients: [],
     shelfStock: rollStock(INGREDIENTS.slice(0, c.shelfSize)),
     difficulty: state.difficulty,
+    lastReactionId: null,
     gameOverReason: '',
   };
   lastTick = Date.now();
@@ -102,9 +114,22 @@ export function addIngredient(id: string): void {
   if (state.status !== 'playing' || !ing) return;
   if ((state.shelfStock[id] ?? 0) <= 0 || state.cauldronIngredients.length >= config().maxCauldron)
     return;
+  const before = state.cauldronIngredients;
   const after = [...state.cauldronIngredients, ing];
   state.shelfStock = { ...state.shelfStock, [id]: state.shelfStock[id] - 1 };
   state.cauldronIngredients = after;
+  state.lastReactionId = null;
+  for (const reaction of reactionsFor(state.difficulty)) {
+    if (!reaction.isActive(before) && reaction.isActive(after)) {
+      state.lastReactionId = reaction.id;
+      feedback = 'reaction';
+      state.timeLeft -= reaction.timePenalty ?? 0;
+      if (reaction.loseLife) {
+        state.lives -= 1;
+        state.cauldronIngredients = [];
+      }
+    }
+  }
   checkEnd();
   emit();
 }
@@ -113,15 +138,27 @@ export function brew(): void {
   const recipe = state.activeRecipe;
   if (state.status !== 'playing' || !recipe || state.cauldronIngredients.length === 0) return;
   const c = config();
-  const values = calculateCauldron(state.cauldronIngredients);
+  const values = calculateCauldron(state.cauldronIngredients, state.difficulty);
   if (isBrewSuccessful(values, recipe, c.tolerance)) {
     state.score += c.scorePerBrew;
     state.timeLeft = Math.min(c.startTime, state.timeLeft + c.timeBonus);
     state.activeRecipe = pickRecipe(state.difficulty);
+    feedback = 'success';
   } else {
     state.lives -= 1;
+    feedback = 'fail';
   }
   state.cauldronIngredients = [];
+  state.lastReactionId = null;
+  checkEnd();
+  emit();
+}
+
+export function pourOut(): void {
+  if (state.status !== 'playing' || state.cauldronIngredients.length === 0) return;
+  state.timeLeft -= POUR_OUT_COST;
+  state.cauldronIngredients = [];
+  state.lastReactionId = null;
   checkEnd();
   emit();
 }

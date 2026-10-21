@@ -26,6 +26,12 @@ Husky runs lint-staged before each commit and lint, format check and build befor
 - Top-10 leaderboard in localStorage with name validation and a confirmed Clear action.
 - Start screen with Help and Menu, difficulty selection (Easy / Medium / Hard) and one leaderboard per difficulty.
 - Auto-save and Continue Game (restores the saved stock and opens the game paused).
+- Drag and drop from the shelf into the cauldron (only ingredient drags are accepted).
+- Hover tooltip with the three ingredient values and smart positioning near screen edges.
+- Chemical reactions: all 15 are typed in `src/data/reactions.ts`; Medium enables the first 2 `medium` reactions, Hard the first 3 `hard` reactions.
+- Pour Out clears the cauldron for 10 seconds without losing a life.
+- CSS-only animations: success glow, explosion and screen shake, floating ingredient icons.
+- Keyboard shortcuts while playing: `1`-`8` add an ingredient, `B` brew, `O` pour out, `P` or `Esc` pause.
 
 ## Structure
 

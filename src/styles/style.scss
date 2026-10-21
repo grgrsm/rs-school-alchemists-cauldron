@@ -217,10 +217,12 @@ p {
     text-align: center;
   }
 
-  &__stats {
-    display: grid;
+  &__key {
+    position: absolute;
+    right: $space-1;
+    bottom: $space-1;
     font-size: $fs-xs;
-    text-align: center;
+    opacity: $opacity-dim;
   }
 
   &--empty {
@@ -292,11 +294,19 @@ p {
     justify-content: center;
     gap: $space-2;
   }
+
+  &__reaction {
+    min-height: $space-5;
+    color: $color-magic;
+    font-family: $font-display;
+  }
 }
 
 .float {
   font-size: $size-icon;
   line-height: 1;
+  animation: bob $duration-bob ease-in-out infinite;
+  animation-delay: calc(var(--i) * #{$float-delay});
 }
 
 /* ---------- bars ---------- */
@@ -599,6 +609,40 @@ p {
   }
 }
 
+.tooltip {
+  --tx: #{$tooltip-gap};
+  --ty: 0;
+
+  position: fixed;
+  z-index: $z-tooltip;
+  min-width: $size-tooltip;
+  padding: $space-2 $space-3;
+  color: $color-paper;
+  pointer-events: none;
+  background: $color-pot;
+  border: $border-thin solid $color-gold;
+  border-radius: $radius-sm;
+  transform: translate(var(--tx), var(--ty));
+
+  &[hidden] {
+    display: none;
+  }
+
+  &--left {
+    --tx: calc(-#{$full} - #{$tooltip-gap});
+  }
+
+  &--up {
+    --ty: -#{$full};
+  }
+
+  &__row {
+    display: flex;
+    justify-content: space-between;
+    gap: $space-3;
+  }
+}
+
 @keyframes pulse {
   50% {
     opacity: $opacity-dim;
@@ -612,5 +656,57 @@ p {
   *::after {
     transition-duration: $duration-reduced !important;
     animation-duration: $duration-reduced !important;
+  }
+}
+
+.fx--fail {
+  animation: shake $duration-base ease-in-out;
+
+  .cauldron__pot::after {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, $color-boom, transparent);
+    animation: burst $duration-base ease-out forwards;
+    content: '';
+  }
+}
+
+.fx--success .cauldron__pot::after {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, $color-spark, transparent);
+  animation: burst $duration-base ease-out forwards;
+  content: '';
+}
+
+.fx--reaction .cauldron__reaction {
+  animation: pulse $duration-pulse ease-in-out;
+}
+
+@keyframes bob {
+  50% {
+    transform: translateY($space-1);
+  }
+}
+
+@keyframes shake {
+  25% {
+    transform: translateX(-$shake);
+  }
+
+  75% {
+    transform: translateX($shake);
+  }
+}
+
+@keyframes burst {
+  from {
+    opacity: 1;
+    transform: scale($scale-burst-from);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale($scale-burst-to);
   }
 }

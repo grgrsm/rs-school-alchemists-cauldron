@@ -1,24 +1,19 @@
-import {
-  BAR_DOMAIN,
-  LOW_TIME,
-  NAME_PATTERN,
-  STAT_LABEL,
-  STAT_SHORT,
-  STATS,
-  TICK_MS,
-} from '../data/constants';
+import { BAR_DOMAIN, LOW_TIME, NAME_PATTERN, STAT_LABEL, STATS, TICK_MS } from '../data/constants';
 import { DIFFICULTIES, DIFFICULTY } from '../data/difficulty';
 import { INGREDIENTS } from '../data/ingredients';
+import { REACTIONS } from '../data/reactions';
 import { inRange } from '../logic/brew-check';
 import { calculateCauldron } from '../logic/calculate-cauldron';
 import {
   addIngredient,
   brew,
+  consumeFeedback,
   continueGame,
   exitToMenu,
   flush,
   getState,
   pause,
+  pourOut,
   resume,
   setDifficulty,
   startGame,
@@ -120,19 +115,21 @@ function shelfHtml(s: IGameState): string {
   const locked =
     s.status !== 'playing' || s.cauldronIngredients.length >= DIFFICULTY[s.difficulty].maxCauldron;
   return shelfList(s)
-    .map((ing) => {
+    .map((ing, idx) => {
       const stock = s.shelfStock[ing.id] ?? 0;
       if (stock <= 0) return '<li class="card card--empty"><span class="badge">0</span></li>';
       return [
         '<li class="card"',
+        ` data-tip="${ing.id}"`,
         '>',
         `<button class="card__btn" type="button" data-id="${ing.id}"`,
+        ' draggable="true"',
         locked ? ' disabled' : '',
         '>',
         `<span class="badge">${stock}</span>`,
         `<span class="card__icon" aria-hidden="true">${ing.icon}</span>`,
         `<span class="card__name">${ing.name}</span>`,
-        `<span class="card__stats">${STATS.map((k) => `<span>${STAT_SHORT[k]} ${signed(ing[k])}</span>`).join('')}</span>`,
+        `<kbd class="card__key">${idx + 1}</kbd>`,
         '</button></li>',
       ].join('');
     })
@@ -140,13 +137,16 @@ function shelfHtml(s: IGameState): string {
 }
 
 function cauldronHtml(s: IGameState): string {
+  const reaction = REACTIONS.find((r) => r.id === s.lastReactionId);
   const items = s.cauldronIngredients
     .map((i, n) => `<span class="float" style="--i:${n}" aria-hidden="true">${i.icon}</span>`)
     .join('');
   return [
     '<div class="cauldron"',
+    ' data-drop',
     '>',
     `<div class="cauldron__pot"><div class="cauldron__content">${items}</div></div>`,
+    `<p class="cauldron__reaction">${reaction ? `\u26A1 ${reaction.name}` : ''}</p>`,
     '</div>',
   ].join('');
 }
@@ -199,7 +199,10 @@ function actionsHtml(s: IGameState): string {
   const main =
     s.status === 'menu'
       ? btn('start', 'Start Game', 'btn--brew')
-      : [btn('brew', 'Brew', 'btn--brew', !playing || empty)].join('');
+      : [
+          btn('brew', 'Brew', 'btn--brew', !playing || empty),
+          btn('pour', 'Pour out', '', !playing || empty),
+        ].join('');
   return [
     '<footer class="actions">',
     btn('help', 'Help'),
@@ -303,10 +306,37 @@ function overlayHtml(s: IGameState): string {
   return '';
 }
 
+/* ---------- tooltip ---------- */
+const tip = document.createElement('div');
+tip.className = 'tooltip';
+tip.hidden = true;
+document.body.append(tip);
+const hideTip = (): void => {
+  tip.hidden = true;
+};
+
+function showTip(card: HTMLElement): void {
+  const ing = INGREDIENTS.find((i) => i.id === card.dataset.tip);
+  if (!ing) return;
+  const rows = STATS.map(
+    (k) => `<p class="tooltip__row"><span>${STAT_LABEL[k]}</span><b>${signed(ing[k])}</b></p>`,
+  ).join('');
+  tip.innerHTML = `<strong>${ing.name}</strong>${rows}`;
+  tip.hidden = false;
+  const r = card.getBoundingClientRect();
+  const left = r.right + tip.offsetWidth > window.innerWidth;
+  const up = r.top + tip.offsetHeight > window.innerHeight;
+  tip.classList.toggle('tooltip--left', left);
+  tip.classList.toggle('tooltip--up', up);
+  tip.style.left = `${left ? r.left : r.right}px`;
+  tip.style.top = `${up ? r.bottom : r.top}px`;
+}
+
 /* ---------- render ---------- */
 function render(): void {
   const s = getState();
-  const values = calculateCauldron(s.cauldronIngredients);
+  hideTip();
+  const values = calculateCauldron(s.cauldronIngredients, s.difficulty);
   const fills = Object.fromEntries(STATS.map((k) => [k, fillOf(values[k], k)])) as Record<
     Stat,
     IFill
@@ -337,6 +367,8 @@ function render(): void {
     el.style.left = `${fills[el.dataset.marker as Stat].pos}%`;
   });
   prevFill = fills;
+  const fx = consumeFeedback();
+  if (fx) root.querySelector('.field')?.classList.add(`fx--${fx}`);
   root.querySelector<HTMLElement>('[data-action="resume"]')?.focus();
 }
 
@@ -365,6 +397,7 @@ const actions: Record<string, (el: HTMLElement) => void> = {
     startGame();
   },
   brew,
+  pour: pourOut,
   pause,
   resume,
   exit: exitToMenu,
@@ -425,6 +458,62 @@ export function initApp(): void {
       nameError = '';
     }
     render();
+  });
+
+  const DRAG_TYPE = 'application/x-alchemist-ingredient';
+  const canDrop = (e: DragEvent): boolean => {
+    const s = getState();
+    return (
+      Boolean(e.dataTransfer?.types.includes(DRAG_TYPE)) &&
+      s.status === 'playing' &&
+      s.cauldronIngredients.length < DIFFICULTY[s.difficulty].maxCauldron
+    );
+  };
+  root.addEventListener('dragstart', (e) => {
+    const card = (e.target as HTMLElement).closest<HTMLElement>('[data-id]');
+    if (!card?.dataset.id || !e.dataTransfer) return;
+    e.dataTransfer.setData(DRAG_TYPE, card.dataset.id);
+    e.dataTransfer.effectAllowed = 'copy';
+  });
+  root.addEventListener('dragover', (e) => {
+    const zone = (e.target as HTMLElement).closest<HTMLElement>('[data-drop]');
+    if (!zone || !canDrop(e)) return;
+    e.preventDefault();
+    zone.classList.add('is-over');
+  });
+  root.addEventListener('dragleave', (e) => {
+    const zone = (e.target as HTMLElement).closest<HTMLElement>('[data-drop]');
+    if (zone && !zone.contains(e.relatedTarget as Node | null)) zone.classList.remove('is-over');
+  });
+  root.addEventListener('drop', (e) => {
+    const zone = (e.target as HTMLElement).closest<HTMLElement>('[data-drop]');
+    if (!zone) return;
+    e.preventDefault();
+    zone.classList.remove('is-over');
+    const id = e.dataTransfer?.getData(DRAG_TYPE);
+    if (id) addIngredient(id);
+  });
+
+  root.addEventListener('mouseover', (e) => {
+    const card = (e.target as HTMLElement).closest<HTMLElement>('[data-tip]');
+    if (card && getState().status === 'playing') showTip(card);
+    else hideTip();
+  });
+  root.addEventListener('mouseleave', hideTip);
+
+  document.addEventListener('keydown', (e) => {
+    const target = e.target as HTMLElement;
+    if (target.matches('input, textarea, select') || e.ctrlKey || e.metaKey || e.altKey) return;
+    const s = getState();
+    if (s.status !== 'playing') return;
+    const key = e.key.toLowerCase();
+    if (key === 'p' || key === 'escape') pause();
+    else if (key === 'b') brew();
+    else if (key === 'o') pourOut();
+    else if (/^[1-8]$/.test(key)) {
+      const ing = shelfList(s)[Number(key) - 1];
+      if (ing) addIngredient(ing.id);
+    }
   });
 
   document.addEventListener('visibilitychange', () => {
