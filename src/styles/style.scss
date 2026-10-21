@@ -297,6 +297,8 @@ p {
 .float {
   font-size: $size-icon;
   line-height: 1;
+  animation: bob $duration-bob ease-in-out infinite;
+  animation-delay: calc(var(--i) * #{$float-delay});
 }
 
 /* ---------- bars ---------- */
@@ -646,5 +648,57 @@ p {
   *::after {
     transition-duration: $duration-reduced !important;
     animation-duration: $duration-reduced !important;
+  }
+}
+
+.fx--fail {
+  animation: shake $duration-base ease-in-out;
+
+  .cauldron__pot::after {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, $color-boom, transparent);
+    animation: burst $duration-base ease-out forwards;
+    content: '';
+  }
+}
+
+.fx--success .cauldron__pot::after {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, $color-spark, transparent);
+  animation: burst $duration-base ease-out forwards;
+  content: '';
+}
+
+.fx--reaction .cauldron__reaction {
+  animation: pulse $duration-pulse ease-in-out;
+}
+
+@keyframes bob {
+  50% {
+    transform: translateY($space-1);
+  }
+}
+
+@keyframes shake {
+  25% {
+    transform: translateX(-$shake);
+  }
+
+  75% {
+    transform: translateX($shake);
+  }
+}
+
+@keyframes burst {
+  from {
+    opacity: 1;
+    transform: scale($scale-burst-from);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale($scale-burst-to);
   }
 }
