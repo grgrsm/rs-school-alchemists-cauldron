@@ -1,6 +1,7 @@
 import { BAR_DOMAIN, LOW_TIME, NAME_PATTERN, STAT_LABEL, STATS, TICK_MS } from '../data/constants';
 import { DIFFICULTIES, DIFFICULTY } from '../data/difficulty';
 import { INGREDIENTS } from '../data/ingredients';
+import { REACTIONS } from '../data/reactions';
 import { inRange } from '../logic/brew-check';
 import { calculateCauldron } from '../logic/calculate-cauldron';
 import {
@@ -133,6 +134,7 @@ function shelfHtml(s: IGameState): string {
 }
 
 function cauldronHtml(s: IGameState): string {
+  const reaction = REACTIONS.find((r) => r.id === s.lastReactionId);
   const items = s.cauldronIngredients
     .map((i, n) => `<span class="float" style="--i:${n}" aria-hidden="true">${i.icon}</span>`)
     .join('');
@@ -141,6 +143,7 @@ function cauldronHtml(s: IGameState): string {
     ' data-drop',
     '>',
     `<div class="cauldron__pot"><div class="cauldron__content">${items}</div></div>`,
+    `<p class="cauldron__reaction">${reaction ? `\u26A1 ${reaction.name}` : ''}</p>`,
     '</div>',
   ].join('');
 }
@@ -327,7 +330,7 @@ function showTip(card: HTMLElement): void {
 function render(): void {
   const s = getState();
   hideTip();
-  const values = calculateCauldron(s.cauldronIngredients);
+  const values = calculateCauldron(s.cauldronIngredients, s.difficulty);
   const fills = Object.fromEntries(STATS.map((k) => [k, fillOf(values[k], k)])) as Record<
     Stat,
     IFill
