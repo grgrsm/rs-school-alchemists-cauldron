@@ -1,5 +1,7 @@
 import type { Difficulty, IDifficultyConfig } from '../types';
 
+export const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
+
 export const DIFFICULTY: Record<Difficulty, IDifficultyConfig> = {
   easy: {
     shelfSize: 4,

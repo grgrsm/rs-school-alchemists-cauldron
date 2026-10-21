@@ -7,7 +7,7 @@ import {
   STATS,
   TICK_MS,
 } from '../data/constants';
-import { DIFFICULTY } from '../data/difficulty';
+import { DIFFICULTIES, DIFFICULTY } from '../data/difficulty';
 import { INGREDIENTS } from '../data/ingredients';
 import { inRange } from '../logic/brew-check';
 import { calculateCauldron } from '../logic/calculate-cauldron';
@@ -18,6 +18,7 @@ import {
   getState,
   pause,
   resume,
+  setDifficulty,
   startGame,
   subscribe,
   subscribeTick,
@@ -34,7 +35,7 @@ interface IFill {
 
 const MID = 50;
 const FULL = 100;
-type Overlay = 'none' | 'leaderboard' | 'confirm-clear';
+type Overlay = 'none' | 'help' | 'settings' | 'leaderboard' | 'confirm-clear';
 
 const appRoot = document.querySelector<HTMLDivElement>('#app');
 if (!appRoot) throw new Error('Missing #app element');
@@ -60,6 +61,7 @@ const formatDate = (ts: number): string => {
   return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+const cap = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
 const signed = (n: number): string => (n > 0 ? `+${n}` : n < 0 ? `\u2212${Math.abs(n)}` : '0');
 const pct = (v: number, k: Stat): number =>
   Math.min(FULL, Math.max(0, ((v + BAR_DOMAIN[k]) / (2 * BAR_DOMAIN[k])) * FULL));
@@ -190,15 +192,14 @@ function barsHtml(s: IGameState, values: IValues): string {
 function actionsHtml(s: IGameState): string {
   const playing = s.status === 'playing';
   const empty = s.cauldronIngredients.length === 0;
-  const side =
-    s.status === 'menu' ? btn('leaderboard', 'Leaderboard') : btn('pause', 'Pause', '', !playing);
+  const side = s.status === 'menu' ? btn('settings', 'Menu') : btn('pause', 'Pause', '', !playing);
   const main =
     s.status === 'menu'
       ? btn('start', 'Start Game', 'btn--brew')
       : [btn('brew', 'Brew', 'btn--brew', !playing || empty)].join('');
   return [
     '<footer class="actions">',
-    '<span></span>',
+    btn('help', 'Help'),
     `<div class="actions__main">${main}</div>`,
     side || '<span></span>',
     '</footer>',
@@ -215,12 +216,14 @@ function boardHtml(d: Difficulty): string {
     .map((e, i) =>
       [
         `<tr><td>${i + 1}</td><td>${esc(e.name)}</td><td>${e.score}</td>`,
+        `<td>${cap(e.difficulty)}</td>`,
         `<td>${formatDate(e.timestamp)}</td></tr>`,
       ].join(''),
     )
     .join('');
   return [
     '<div class="board-wrap"><table class="board"><thead><tr><th>#</th><th>Name</th><th>Score</th>',
+    '<th>Level</th>',
     `<th>Date</th></tr></thead><tbody>${body}</tbody></table></div>`,
   ].join('');
 }
@@ -234,6 +237,33 @@ function entryHtml(s: IGameState): string {
 }
 
 function overlayHtml(s: IGameState): string {
+  if (overlay === 'help') {
+    return modal(
+      'Rules',
+      `<ul class="modal__list"><li>Add ingredients from the shelf with a click.</li>
+      <li>Move Temperature, Density and Magic Power into the recipe zones.</li>
+      <li>Brew checks the mix; a failed brew costs a life.</li>
+      <li>The game ends when time, lives or ingredients run out.</li></ul>${btn('close', 'Close')}`,
+    );
+  }
+  if (overlay === 'settings') {
+    const diff = DIFFICULTIES.map(
+      (d) =>
+        `<button class="btn btn--small" type="button" data-action="difficulty" data-value="${d}" aria-pressed="${s.difficulty === d}">${cap(d)}</button>`,
+    ).join('');
+    return modal(
+      'Menu',
+      [
+        '<div class="modal__stack">',
+        btn('start', 'Start Game', 'btn--brew'),
+        `<div class="modal__row" role="group" aria-label="Difficulty">${diff}</div>`,
+        btn('leaderboard', 'Leaderboard'),
+        btn('help', 'Help (Rules)'),
+        btn('close', 'Close'),
+        '</div>',
+      ].join(''),
+    );
+  }
   if (overlay === 'leaderboard') {
     return modal(
       'Leaderboard',
@@ -347,6 +377,15 @@ const actions: Record<string, (el: HTMLElement) => void> = {
   close: ui(() => {
     overlay = 'none';
   }),
+  difficulty: (el) => setDifficulty(el.dataset.value as Difficulty),
+  settings: ui(() => {
+    overlay = 'settings';
+  }),
+  help: () => {
+    overlay = 'help';
+    if (getState().status === 'playing') pause();
+    else render();
+  },
 };
 
 /* ---------- events ---------- */
