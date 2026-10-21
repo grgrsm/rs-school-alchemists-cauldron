@@ -3,7 +3,7 @@ import { DIFFICULTY } from '../data/difficulty';
 import { INGREDIENTS } from '../data/ingredients';
 import { inRange } from '../logic/brew-check';
 import { calculateCauldron } from '../logic/calculate-cauldron';
-import { addIngredient, getState, startGame, subscribe } from '../state/game-state';
+import { addIngredient, brew, getState, startGame, subscribe } from '../state/game-state';
 import type { IGameState, IValues, Stat } from '../types';
 
 interface IFill {
@@ -32,19 +32,30 @@ const fillOf = (v: number, k: Stat): IFill => {
   const p = pct(v, k);
   return { left: Math.min(p, MID), width: Math.abs(p - MID), pos: p };
 };
+const btn = (action: string, label: string, cls = '', disabled = false): string =>
+  `<button class="btn ${cls}" type="button" data-action="${action}"${disabled ? ' disabled' : ''}>${label}</button>`;
 const shelfList = (s: IGameState) => INGREDIENTS.slice(0, DIFFICULTY[s.difficulty].shelfSize);
 
 /* ---------- view builders ---------- */
+function statsHtml(s: IGameState): string {
+  return [
+    '<div class="hud__stats">',
+    `<p class="hud__score">Score: <b>${s.score}</b></p>`,
+    '</div>',
+  ].join('');
+}
 
-function headerHtml(): string {
+function headerHtml(s: IGameState): string {
   return [
     '<header class="hud">',
+    statsHtml(s),
     '<h1 class="title">Alchemist\u2019s Cauldron</h1>',
     '</header>',
   ].join('');
 }
 
 function shelfHtml(s: IGameState): string {
+  if (s.status === 'menu') return '<p class="shelf__empty">The shelf is empty</p>';
   const locked =
     s.status !== 'playing' || s.cauldronIngredients.length >= DIFFICULTY[s.difficulty].maxCauldron;
   return shelfList(s)
@@ -79,6 +90,21 @@ function cauldronHtml(s: IGameState): string {
   ].join('');
 }
 
+function recipeHtml(s: IGameState): string {
+  const r = s.activeRecipe;
+  const max = DIFFICULTY[s.difficulty].maxCauldron;
+  const full = s.cauldronIngredients.length >= max;
+  const rows = STATS.map(
+    (k) =>
+      `<div class="recipe__row"><span>${STAT_LABEL[k]}</span><b>${r ? `${r[k].min}..${r[k].max}` : '\u2014'}</b></div>`,
+  ).join('');
+  return [
+    '<aside class="recipe"><h2 class="recipe__label">Current recipe</h2>',
+    `<p class="recipe__name">${r ? r.name : 'No recipe yet'}</p>${rows}`,
+    `<p class="recipe__count${full ? ' recipe__count--full' : ''}">Ingredients: ${s.cauldronIngredients.length} / ${max}</p></aside>`,
+  ].join('');
+}
+
 function barsHtml(s: IGameState, values: IValues): string {
   const tol = DIFFICULTY[s.difficulty].tolerance;
   const r = s.activeRecipe;
@@ -105,6 +131,23 @@ function barsHtml(s: IGameState, values: IValues): string {
   }).join('');
 }
 
+function actionsHtml(s: IGameState): string {
+  const playing = s.status === 'playing';
+  const empty = s.cauldronIngredients.length === 0;
+  const side = '';
+  const main =
+    s.status === 'menu'
+      ? btn('start', 'Start Game', 'btn--brew')
+      : [btn('brew', 'Brew', 'btn--brew', !playing || empty)].join('');
+  return [
+    '<footer class="actions">',
+    '<span></span>',
+    `<div class="actions__main">${main}</div>`,
+    side || '<span></span>',
+    '</footer>',
+  ].join('');
+}
+
 /* ---------- render ---------- */
 function render(): void {
   const s = getState();
@@ -116,13 +159,15 @@ function render(): void {
   root.innerHTML = [
     '<div class="game',
     '">',
-    headerHtml(),
+    headerHtml(s),
     '<main class="field"><ul class="shelf">',
     shelfHtml(s),
     '</ul>',
     cauldronHtml(s),
+    recipeHtml(s),
     '</main>',
     `<section class="bars">${barsHtml(s, values)}</section>`,
+    actionsHtml(s),
     '</div>',
   ].join('');
   void root.offsetWidth;
@@ -137,14 +182,26 @@ function render(): void {
   prevFill = fills;
 }
 
+const actions: Record<string, (el: HTMLElement) => void> = {
+  start: () => {
+    startGame();
+  },
+  brew,
+};
+
 /* ---------- events ---------- */
 export function initApp(): void {
   subscribe(render);
 
   root.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
+    const act = target.closest<HTMLElement>('[data-action]');
+    if (act?.dataset.action) {
+      actions[act.dataset.action]?.(act);
+      return;
+    }
     const card = target.closest<HTMLElement>('[data-id]');
     if (card?.dataset.id) addIngredient(card.dataset.id);
   });
-  startGame();
+  render();
 }
