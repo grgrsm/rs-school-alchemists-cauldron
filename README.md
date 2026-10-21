@@ -26,6 +26,7 @@ Husky runs lint-staged before each commit and lint, format check and build befor
 - Top-10 leaderboard in localStorage with name validation and a confirmed Clear action.
 - Start screen with Help and Menu, difficulty selection (Easy / Medium / Hard) and one leaderboard per difficulty.
 - Auto-save and Continue Game (restores the saved stock and opens the game paused).
+- Drag and drop from the shelf into the cauldron (only ingredient drags are accepted).
 
 ## Structure
 
