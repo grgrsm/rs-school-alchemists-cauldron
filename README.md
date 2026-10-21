@@ -24,6 +24,8 @@ Husky runs lint-staged before each commit and lint, format check and build befor
 - Timer (calculated from timestamps), lives and a Game Over screen.
 - Pause dialog (Resume / Exit to Menu), automatic pause when the tab is hidden.
 - Top-10 leaderboard in localStorage with name validation and a confirmed Clear action.
+- Start screen with Help and Menu, difficulty selection (Easy / Medium / Hard) and one leaderboard per difficulty.
+- Auto-save and Continue Game (restores the saved stock and opens the game paused).
 
 ## Structure
 
