@@ -1,0 +1,95 @@
+$color-parchment: #ead9b0;
+$color-parchment-dark: #cbb283;
+$color-paper: #f4e8c8;
+$color-ink: #2a1c10;
+$color-ink-soft: #5a4128;
+$color-wood: #94603a;
+$color-wood-dark: #5e3b22;
+$color-gold: #b8872b;
+$color-green: #3f8a3c;
+$color-green-glow: rgba(88, 190, 70, 0.6);
+$color-danger: #a8281f;
+$color-boom: rgba(230, 90, 30, 0.85);
+$color-spark: rgba(255, 220, 90, 0.85);
+$color-temperature: #c0452a;
+$color-density: #2d6a9c;
+$color-magic: #6b3f9c;
+$color-liquid: #6fb83f;
+$color-pot: #1e1812;
+$color-zone: rgba(63, 138, 60, 0.55);
+$color-zone-tol: rgba(63, 138, 60, 0.22);
+$color-shadow: rgba(42, 28, 16, 0.45);
+$color-backdrop: rgba(30, 20, 10, 0.7);
+
+$space-1: 0.25rem;
+$space-2: 0.5rem;
+$space-3: 0.75rem;
+$space-4: 1rem;
+$space-5: 1.5rem;
+$space-6: 2.5rem;
+
+$radius-sm: 0.375rem;
+$radius-md: 0.75rem;
+$radius-round: 50%;
+$border-thin: 2px;
+$border-thick: 4px;
+
+$font-display: 'Cinzel', 'Palatino Linotype', Georgia, serif;
+$font-body: 'IM Fell English', Georgia, serif;
+$fs-xs: 0.75rem;
+$fs-sm: 0.875rem;
+$fs-md: 1rem;
+$fs-lg: clamp(1.1rem, 3.5vw, 1.6rem);
+$fs-xl: clamp(1.4rem, 5vw, 2.4rem);
+$fw-bold: 700;
+
+$duration-fast: 0.2s;
+$duration-base: 0.5s;
+$duration-bob: 2.4s;
+$duration-pulse: 1s;
+
+$z-overlay: 20;
+$z-tooltip: 30;
+
+$full: 100%;
+$half: 50%;
+$opacity-dim: 0.4;
+$blur: 4px;
+$shake: 0.5rem;
+$scale-pulse: 1.08;
+$glow: 0.75rem;
+
+$size-shelf: 15rem;
+$size-recipe: 16rem;
+$size-pot: 17rem;
+$size-pot-height: 10rem;
+$size-badge: 1.6rem;
+$size-bar: 1.1rem;
+$size-icon: 2rem;
+$size-modal: 32rem;
+$size-tooltip: 12rem;
+$size-heart: 1.8rem;
+$layout-max: 80rem;
+$bp-md: 60rem;
+$bp-sm: 36rem;
+$float-step: 3rem;
+$float-offset: 2rem;
+$float-delay: 0.3s;
+$tooltip-gap: 0.5rem;
+$field-min-height: 22rem;
+
+$ratio-pot: 1.15;
+$pot-inset-top: 30%;
+$pot-inset-side: 18%;
+$pot-inset-bottom: 16%;
+$pot-rim-top: 9%;
+$pot-rim-side: 14%;
+$pot-rim-height: 16%;
+$color-liquid-dark: #2f5a1c;
+$size-marker: 0.9rem;
+$size-bar-marker-width: 0.35rem;
+$color-green-dark: #2c6a2a;
+$opacity-fill: 0.55;
+$duration-reduced: 0.01ms;
+$scale-burst-from: 0.2;
+$scale-burst-to: 1.4;
