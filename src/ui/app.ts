@@ -1,9 +1,17 @@
-import { BAR_DOMAIN, STAT_LABEL, STAT_SHORT, STATS } from '../data/constants';
+import { BAR_DOMAIN, LOW_TIME, STAT_LABEL, STAT_SHORT, STATS, TICK_MS } from '../data/constants';
 import { DIFFICULTY } from '../data/difficulty';
 import { INGREDIENTS } from '../data/ingredients';
 import { inRange } from '../logic/brew-check';
 import { calculateCauldron } from '../logic/calculate-cauldron';
-import { addIngredient, brew, getState, startGame, subscribe } from '../state/game-state';
+import {
+  addIngredient,
+  brew,
+  getState,
+  startGame,
+  subscribe,
+  subscribeTick,
+  tick,
+} from '../state/game-state';
 import type { IGameState, IValues, Stat } from '../types';
 
 interface IFill {
@@ -25,6 +33,11 @@ let prevFill: Record<Stat, IFill> = {
 };
 
 /* ---------- helpers ---------- */
+const pad = (n: number): string => String(n).padStart(2, '0');
+const formatTime = (s: number): string => {
+  const t = Math.max(0, Math.ceil(s));
+  return `${pad(Math.floor(t / 60))}:${pad(t % 60)}`;
+};
 const signed = (n: number): string => (n > 0 ? `+${n}` : n < 0 ? `\u2212${Math.abs(n)}` : '0');
 const pct = (v: number, k: Stat): number =>
   Math.min(FULL, Math.max(0, ((v + BAR_DOMAIN[k]) / (2 * BAR_DOMAIN[k])) * FULL));
@@ -41,8 +54,28 @@ function statsHtml(s: IGameState): string {
   return [
     '<div class="hud__stats">',
     `<p class="hud__score">Score: <b>${s.score}</b></p>`,
+    timeHtml(s),
     '</div>',
   ].join('');
+}
+
+function timeHtml(s: IGameState): string {
+  const ratio = Math.min(1, s.timeLeft / DIFFICULTY[s.difficulty].startTime);
+  const low = s.status !== 'menu' && s.timeLeft < LOW_TIME;
+  return [
+    `<div id="time" class="hud__time${low ? ' hud__time--low' : ''}">`,
+    `Time: <b id="time-text">${formatTime(s.timeLeft)}</b>`,
+    `<div class="hud__bar"><i id="time-fill" style="width:${ratio * FULL}%"></i></div></div>`,
+  ].join('');
+}
+
+function livesHtml(s: IGameState): string {
+  const total = s.status === 'menu' ? 0 : DIFFICULTY[s.difficulty].lives;
+  const hearts = Array.from(
+    { length: total },
+    (_, i) => `<span class="heart${i < s.lives ? '' : ' heart--lost'}">\u2665</span>`,
+  ).join('');
+  return `<div class="hud__lives" aria-label="Lives">${hearts}</div>`;
 }
 
 function headerHtml(s: IGameState): string {
@@ -50,6 +83,7 @@ function headerHtml(s: IGameState): string {
     '<header class="hud">',
     statsHtml(s),
     '<h1 class="title">Alchemist\u2019s Cauldron</h1>',
+    livesHtml(s),
     '</header>',
   ].join('');
 }
@@ -148,6 +182,24 @@ function actionsHtml(s: IGameState): string {
   ].join('');
 }
 
+const modal = (title: string, body: string): string =>
+  `<div class="overlay"><div class="modal" role="dialog" aria-modal="true" aria-label="${title}"><h2 class="modal__title">${title}</h2>${body}</div></div>`;
+
+function overlayHtml(s: IGameState): string {
+  if (s.status === 'game-over') {
+    return modal(
+      'Game Over',
+      [
+        `<p class="modal__score">Final score: <b>${s.score}</b></p><p>${s.gameOverReason}</p>`,
+        '<div class="modal__row">',
+        btn('start', 'Play Again', 'btn--brew'),
+        '</div>',
+      ].join(''),
+    );
+  }
+  return '';
+}
+
 /* ---------- render ---------- */
 function render(): void {
   const s = getState();
@@ -169,6 +221,7 @@ function render(): void {
     `<section class="bars">${barsHtml(s, values)}</section>`,
     actionsHtml(s),
     '</div>',
+    overlayHtml(s),
   ].join('');
   void root.offsetWidth;
   root.querySelectorAll<HTMLElement>('.bar__fill').forEach((el) => {
@@ -182,6 +235,17 @@ function render(): void {
   prevFill = fills;
 }
 
+function updateHud(): void {
+  const s = getState();
+  const text = document.querySelector<HTMLElement>('#time-text');
+  const fill = document.querySelector<HTMLElement>('#time-fill');
+  const box = document.querySelector<HTMLElement>('#time');
+  if (!text || !fill || !box) return;
+  text.textContent = formatTime(s.timeLeft);
+  fill.style.width = `${Math.min(1, s.timeLeft / DIFFICULTY[s.difficulty].startTime) * FULL}%`;
+  box.classList.toggle('hud__time--low', s.timeLeft < LOW_TIME);
+}
+
 const actions: Record<string, (el: HTMLElement) => void> = {
   start: () => {
     startGame();
@@ -192,6 +256,7 @@ const actions: Record<string, (el: HTMLElement) => void> = {
 /* ---------- events ---------- */
 export function initApp(): void {
   subscribe(render);
+  subscribeTick(updateHud);
 
   root.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
@@ -203,5 +268,6 @@ export function initApp(): void {
     const card = target.closest<HTMLElement>('[data-id]');
     if (card?.dataset.id) addIngredient(card.dataset.id);
   });
+  window.setInterval(tick, TICK_MS);
   render();
 }

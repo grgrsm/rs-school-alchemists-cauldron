@@ -3,7 +3,7 @@ import { INGREDIENTS } from '../data/ingredients';
 import { isBrewSuccessful } from '../logic/brew-check';
 import { calculateCauldron } from '../logic/calculate-cauldron';
 import { pickRecipe } from '../logic/recipe-generator';
-import { rollStock } from '../logic/stock';
+import { isShelfEmpty, rollStock } from '../logic/stock';
 import type { Difficulty, IGameState, IIngredient } from '../types';
 
 const createMenuState = (difficulty: Difficulty): IGameState => ({
@@ -19,17 +19,44 @@ const createMenuState = (difficulty: Difficulty): IGameState => ({
 });
 
 let state: IGameState = createMenuState('medium');
+let lastTick = Date.now();
 const listeners: Array<() => void> = [];
+const tickListeners: Array<() => void> = [];
 
 export const getState = (): IGameState => state;
 export const subscribe = (fn: () => void): void => {
   listeners.push(fn);
+};
+export const subscribeTick = (fn: () => void): void => {
+  tickListeners.push(fn);
 };
 
 const config = () => DIFFICULTY[state.difficulty];
 
 function emit(): void {
   listeners.forEach((fn) => fn());
+}
+
+const isOver = (): boolean => state.status === 'game-over';
+
+function sync(): void {
+  const now = Date.now();
+  state.timeLeft -= (now - lastTick) / 1000;
+  lastTick = now;
+}
+
+function checkEnd(): void {
+  if (state.status !== 'playing') return;
+  let reason = '';
+  if (state.timeLeft <= 0) reason = 'Time is up';
+  else if (state.lives <= 0) reason = 'No lives left';
+  else if (isShelfEmpty(state.shelfStock) && state.cauldronIngredients.length === 0) {
+    reason = 'Out of ingredients';
+  }
+  if (!reason) return;
+  state.timeLeft = Math.max(0, state.timeLeft);
+  state.status = 'game-over';
+  state.gameOverReason = reason;
 }
 
 export function startGame(): void {
@@ -45,6 +72,7 @@ export function startGame(): void {
     difficulty: state.difficulty,
     gameOverReason: '',
   };
+  lastTick = Date.now();
   emit();
 }
 
@@ -56,6 +84,7 @@ export function addIngredient(id: string): void {
   const after = [...state.cauldronIngredients, ing];
   state.shelfStock = { ...state.shelfStock, [id]: state.shelfStock[id] - 1 };
   state.cauldronIngredients = after;
+  checkEnd();
   emit();
 }
 
@@ -72,5 +101,14 @@ export function brew(): void {
     state.lives -= 1;
   }
   state.cauldronIngredients = [];
+  checkEnd();
   emit();
+}
+
+export function tick(): void {
+  if (state.status !== 'playing') return;
+  sync();
+  checkEnd();
+  if (isOver()) emit();
+  else tickListeners.forEach((fn) => fn());
 }
