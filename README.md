@@ -23,6 +23,7 @@ Husky runs lint-staged before each commit and lint, format check and build befor
 - Recipe pool of 20 recipes, ingredient counter, Brew check with tolerance, score and time bonus.
 - Timer (calculated from timestamps), lives and a Game Over screen.
 - Pause dialog (Resume / Exit to Menu), automatic pause when the tab is hidden.
+- Top-10 leaderboard in localStorage with name validation and a confirmed Clear action.
 
 ## Structure
 

@@ -16,3 +16,6 @@ export const STAT_SHORT: Record<Stat, string> = {
 export const BAR_DOMAIN: Record<Stat, number> = { temperature: 100, density: 60, magicPower: 100 };
 export const LOW_TIME = 15;
 export const TICK_MS = 200;
+export const TOP_N = 10;
+export const BOARD_KEY = 'alchemist-leaderboard';
+export const NAME_PATTERN = /^[\p{L}\d _-]{2,15}$/u;

@@ -500,6 +500,15 @@ p {
   }
 }
 
+.btn--small {
+  padding: $space-1 $space-3;
+  font-size: $fs-sm;
+
+  &[aria-pressed='true'] {
+    background: linear-gradient($color-gold, $color-wood);
+  }
+}
+
 /* ---------- overlays ---------- */
 .overlay {
   position: fixed;
@@ -550,6 +559,43 @@ p {
     font-family: $font-display;
     font-size: $fs-lg;
     text-align: center;
+  }
+}
+
+.entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $space-2;
+  margin: $space-3 0;
+
+  &__error {
+    flex-basis: $full;
+    color: $color-danger;
+  }
+
+  input {
+    padding: $space-1 $space-2;
+    font: inherit;
+    background: $color-paper;
+    border: $border-thin solid $color-ink;
+    border-radius: $radius-sm;
+  }
+}
+
+.board-wrap {
+  overflow-x: auto;
+}
+
+.board {
+  width: $full;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: $space-1 $space-2;
+    text-align: left;
+    border-bottom: $border-thin solid $color-parchment-dark;
   }
 }
 
